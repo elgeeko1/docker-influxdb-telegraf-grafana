@@ -1,0 +1,90 @@
+version: '3'
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    hostname: influxdb
+    networks:
+      - influx-network
+    ports:
+      - "8086:8086"
+    env_file:
+      - influx.env
+    volumes:
+      - influxdb-storage:/var/lib/influxdb
+    deploy:
+      restart_policy:
+        condition: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    hostname: telegraf
+    networks:
+      - influx-network
+    ports:
+      - "8186:8186"
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    env_file:
+      - influx.env
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    deploy:
+      restart_policy:
+        condition: always
+    
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    hostname: grafana
+    networks:
+      - influx-network
+    ports:
+      - "3000:3000"
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/dashboards/example.json:/usr/share/grafana/public/dashboards/home.json
+    deploy:
+      restart_policy:
+        condition: always
+
+  value-publisher:
+    build:
+      dockerfile: value-publisher.Dockerfile
+    container_name: value-publisher
+    networks:
+      - influx-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      telegraf:
+        condition: service_started
+    
+networks:
+  influx-network:
+    driver: bridge
+
+volumes:
+  influxdb-storage:
+  grafana-storage:
