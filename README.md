@@ -4,7 +4,8 @@
 - InfluxDB v2
 - Telegraf
 - Grafana
-- Python value publisher
+- Python value publisher via HTTP
+- C value publisher via UDP sockets
 
 ## How to use
 

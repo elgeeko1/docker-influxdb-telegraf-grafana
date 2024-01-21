@@ -29,7 +29,8 @@ services:
     networks:
       - influx-network
     ports:
-      - "8186:8186"
+      - "8186:8186"     # http
+      - "8094:8094/udp" # UDP socket
     depends_on:
       influxdb:
         condition: service_healthy
@@ -69,10 +70,24 @@ services:
       restart_policy:
         condition: always
 
-  value-publisher:
+  value-publisher-py:
     build:
-      dockerfile: value-publisher.Dockerfile
-    container_name: value-publisher
+      dockerfile: value-publisher-py.Dockerfile
+    container_name: value-publisher-py
+    hostname: value-publisher-py
+    networks:
+      - influx-network
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      telegraf:
+        condition: service_started
+
+  value-publisher-c:
+    build:
+      dockerfile: value-publisher-c.Dockerfile
+    container_name: value-publisher-c
+    hostname: value-publisher-c
     networks:
       - influx-network
     depends_on:
