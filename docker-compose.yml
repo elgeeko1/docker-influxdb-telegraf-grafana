@@ -77,6 +77,8 @@ services:
     hostname: value-publisher-py
     networks:
       - influx-network
+    links:
+      - telegraf
     depends_on:
       influxdb:
         condition: service_healthy
@@ -90,6 +92,8 @@ services:
     hostname: value-publisher-c
     networks:
       - influx-network
+    links:
+      - telegraf
     depends_on:
       influxdb:
         condition: service_healthy

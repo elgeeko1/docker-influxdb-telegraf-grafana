@@ -12,7 +12,6 @@
 #include <math.h>
 
 #define SERVER_PORT 8094
-#define SERVER_IP "192.168.64.74"
 #define BUFFER_SIZE 256 * 1024 * 1024 // 256MB
 
 // Function to set a socket to non-blocking mode
@@ -154,7 +153,7 @@ void sigint_handler(int sig) {
 
 #define TAGSET_MAX_LENGTH 512
 #define INFLUXDB_MAX_LINE_LENGTH 2048
-int main() {
+int main(int argc, char *argv[]) {
     // socket
     int sockfd = -1;
     struct sockaddr_in server_addr;
@@ -165,6 +164,7 @@ int main() {
     char fieldSet[TAGSET_MAX_LENGTH] = {"\0"};
     char hostname[MAX_HOSTNAME_LEN] = {"\0"};
     char influxdb_line[INFLUXDB_MAX_LINE_LENGTH] = {"\0"};
+    char server_ip[16] = {"\0"};
 
     // measurement to produce
     float value = 0;
@@ -190,13 +190,18 @@ int main() {
     }
 
     // Initialize socket and connect to server
+    if(argc >= 2 && strlen(argv[1]) > 0)
+        strcpy(server_ip, argv[1]);
+    else
+        strcpy(server_ip, "0.0.0.0");
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERVER_PORT);
-    inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);
+    inet_pton(AF_INET, server_ip, &server_addr.sin_addr);
     sockfd = init_socket();
     if(sockfd == -1)
         return -1;
+    printf("Connecting to %s:%d\n", server_ip, SERVER_PORT);
 
     // produce periodic values until interruped
     while(!sigint_received){
